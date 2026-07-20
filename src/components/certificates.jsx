@@ -298,6 +298,23 @@ export default function Certificates() {
             </span>
           </a>
 
+          <a className="cert-card reveal" href="https://coursera.org/verify/YV4PPGGIG116" target="_blank" rel="noopener noreferrer">
+  <div className="cert-icon" aria-hidden="true">
+    
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#0064E0" d="M16.14 6c-1.63 0-3.08.97-4.14 2.21C10.94 6.97 9.49 6 7.86 6 4.63 6 2 8.69 2 12s2.63 6 5.86 6c1.63 0 3.08-.97 4.14-2.21 1.06 1.24 2.51 2.21 4.14 2.21 3.23 0 5.86-2.69 5.86-6S23.37 6 16.14 6zm-8.28 9.8c-2.01 0-3.64-1.7-3.64-3.8s1.63-3.8 3.64-3.8c1.32 0 2.47.74 3.12 1.84a3.8 3.8 0 0 0-.01 3.93c-.65 1.09-1.8 1.83-3.11 1.83zm8.28 0c-1.31 0-2.46-.74-3.11-1.83a3.8 3.8 0 0 0-.01-3.93c.65-1.1 1.8-1.84 3.12-1.84 2.01 0 3.64 1.7 3.64 3.8s-1.63 3.8-3.64 3.8z"/>
+    </svg>
+  </div>
+  <h3 className="cert-provider">Meta</h3>
+  <p className="cert-title">HTML & CSS in depth</p>
+  <span className="cert-btn">
+    View Certificate
+    <svg viewBox="0 0 24 24" className="ext-icon" aria-hidden="true">
+      <path d="M7 17L17 7M17 7H9M17 7V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </svg>
+  </span>
+</a>
+
         </div>
       </div>
     </section>
