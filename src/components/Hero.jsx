@@ -14,7 +14,7 @@ export default function Hero() {
 
           <div className="hero-v3-stats">
             <div>
-              <span className="hero-v3-stat-num">16+</span>
+              <span className="hero-v3-stat-num">17+</span>
               <span className="hero-v3-stat-label">Certifications<br />Earned</span>
             </div>
             <div>

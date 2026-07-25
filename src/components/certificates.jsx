@@ -12,7 +12,24 @@ export default function Certificates() {
           </p>
         </div>
         <div className="cert-grid">
-          
+
+          {/* IBM Certificate - Introduction to Cloud Computing */}
+          <a className="cert-card reveal" href="https://coursera.org/verify/7995THVAD7A4" target="_blank" rel="noopener noreferrer">
+            <div className="cert-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <text x="24" y="30" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="20" letterSpacing="-1" fill="#054ADA">IBM</text>
+              </svg>
+            </div>
+            <h3 className="cert-provider">IBM</h3>
+            <p className="cert-title">Introduction to Cloud Computing</p>
+            <span className="cert-btn">
+              View Certificate
+              <svg viewBox="0 0 24 24" className="ext-icon" aria-hidden="true">
+                <path d="M7 17L17 7M17 7H9M17 7V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              </svg>
+            </span>
+          </a>
+
           {/* Google Certificates */}
           <a className="cert-card reveal" href="https://www.coursera.org/account/accomplishments/verify/D08YBQB4SJ97" target="_blank" rel="noopener noreferrer">
             <div className="cert-icon" aria-hidden="true">
