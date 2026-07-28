@@ -9,6 +9,12 @@ import DockerComposeToKubernetes from './components/blog/DockerComposeToKubernet
 import GitOpsVsTraditionalOps from './components/blog/GitOpsVsTraditionalOps';
 import WhyLearnCICDEarly from './components/blog/WhyLearnCICDEarly';
 
+// Dynamic (database-driven) blog posts + admin
+import DynamicBlogPost from './components/DynamicBlogPost';
+import AdminLogin from './components/admin/AdminLogin';
+import AdminDashboard from './components/admin/AdminDashboard';
+import ProtectedRoute from './components/admin/ProtectedRoute';
+
 function App() {
   return (
     <Router>
@@ -17,11 +23,25 @@ function App() {
         {/* Main Home Page */}
         <Route path="/" element={<Home />} />
         
-        {/* Blog Pages */}
+        {/* Blog Pages (hand-written) */}
         <Route path="/blog/linux-home-server" element={<LinuxHomeServer />} />
         <Route path="/blog/compose-to-kubernetes" element={<DockerComposeToKubernetes />} />
         <Route path="/blog/first-pipeline-lessons" element={<GitOpsVsTraditionalOps />} />
         <Route path="/blog/why-learn-cicd-early" element={<WhyLearnCICDEarly />} />
+
+        {/* Blog posts added from the admin dashboard */}
+        <Route path="/blog/:slug" element={<DynamicBlogPost />} />
+
+        {/* Admin */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </Router>
   );

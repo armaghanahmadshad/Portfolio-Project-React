@@ -1,7 +1,24 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { supabase } from '../lib/supabaseClient';
 
 export default function Blog() {
+  const [dynamicPosts, setDynamicPosts] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+    supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('published', true)
+      .order('sort_order')
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (active) setDynamicPosts(data || []);
+      });
+    return () => { active = false; };
+  }, []);
+
   return (
     <section id="blog">
       <div className="wrap">
@@ -54,6 +71,16 @@ export default function Blog() {
             <span className="read">Read post →</span>
           </Link>
           
+          {/* Posts added from the admin dashboard */}
+          {dynamicPosts.map((post) => (
+            <Link key={post.id} to={`/blog/${post.slug}`} className="blog-card reveal">
+              <span className="meta">{post.category} — {post.read_time}</span>
+              <h3>{post.title}</h3>
+              <p>{post.excerpt}</p>
+              <span className="read">Read post →</span>
+            </Link>
+          ))}
+
         </div>
       </div>
     </section>

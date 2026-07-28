@@ -1,6 +1,45 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabaseClient';
 
 export default function Skills() {
+  const [dynamicSkills, setDynamicSkills] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+    supabase
+      .from('skills')
+      .select('*')
+      .order('sort_order')
+      .order('created_at')
+      .then(({ data }) => {
+        if (active) setDynamicSkills(data || []);
+      });
+    return () => { active = false; };
+  }, []);
+
+  const byGroup = (groupName) => dynamicSkills.filter((s) => s.group_name === groupName);
+
+  const DynamicSkillCard = ({ skill }) => (
+    <div className="skill-card" key={skill.id}>
+      <div className="skill-icon" aria-hidden="true">
+        {skill.icon_slug ? (
+          <img
+            src={`https://cdn.simpleicons.org/${skill.icon_slug}/${(skill.icon_color || '4FD1C5').replace('#', '')}`}
+            alt=""
+            width="24"
+            height="24"
+          />
+        ) : (
+          <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="16" cy="16" r="13" fill="none" stroke={`#${(skill.icon_color || '4FD1C5').replace('#', '')}`} strokeWidth="2.2" />
+          </svg>
+        )}
+      </div>
+      <h4 className="skill-name">{skill.name}</h4>
+      <span className="lvl">{skill.level_label}</span>
+    </div>
+  );
+
   return (
     <section id="skills">
       <div className="wrap">
@@ -55,6 +94,7 @@ export default function Skills() {
               <h4 className="skill-name">Linux / Bash</h4>
               <span className="lvl">daily use</span>
             </div>
+            {byGroup('Daily essentials').map((s) => <DynamicSkillCard key={s.id} skill={s} />)}
           </div>
         </div>
 
@@ -101,6 +141,7 @@ export default function Skills() {
               <h4 className="skill-name">GitHub Actions</h4>
               <span className="lvl">practicing</span>
             </div>
+            {byGroup('Active practice').map((s) => <DynamicSkillCard key={s.id} skill={s} />)}
           </div>
         </div>
 
@@ -131,6 +172,7 @@ export default function Skills() {
               <h4 className="skill-name">Microsoft Azure</h4>
               <span className="lvl">exploring</span>
             </div>
+            {byGroup('Next on the roadmap').map((s) => <DynamicSkillCard key={s.id} skill={s} />)}
           </div>
         </div>
         
