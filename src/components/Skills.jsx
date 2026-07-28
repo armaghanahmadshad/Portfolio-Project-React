@@ -7,7 +7,9 @@ function SkillCard({ skill }) {
   return (
     <div className="skill-card">
       <div className="skill-icon" aria-hidden="true">
-        {skill.icon_slug ? (
+        {skill.icon_svg ? (
+          <svg viewBox={skill.icon_viewbox || '0 0 32 32'} xmlns="http://www.w3.org/2000/svg" dangerouslySetInnerHTML={{ __html: skill.icon_svg }} />
+        ) : skill.icon_slug ? (
           <img
             src={`https://cdn.simpleicons.org/${skill.icon_slug}/${(skill.icon_color || '4FD1C5').replace('#', '')}`}
             alt=""

@@ -37,7 +37,9 @@ export default function Certificates() {
               rel="noopener noreferrer"
             >
               <div className="cert-icon" aria-hidden="true">
-                {cert.icon_slug ? (
+                {cert.icon_svg ? (
+                  <svg viewBox={cert.icon_viewbox || '0 0 48 48'} xmlns="http://www.w3.org/2000/svg" dangerouslySetInnerHTML={{ __html: cert.icon_svg }} />
+                ) : cert.icon_slug ? (
                   <img
                     src={`https://cdn.simpleicons.org/${cert.icon_slug}/${(cert.icon_color || '5A6672').replace('#', '')}`}
                     alt=""

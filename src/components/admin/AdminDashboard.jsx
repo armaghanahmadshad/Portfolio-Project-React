@@ -41,7 +41,7 @@ function EntryList({ items, renderLabel, onDelete }) {
 // ---------------------------------------------------------------------------
 function CertificatesTab() {
   const [items, setItems] = useState([]);
-  const [form, setForm] = useState({ provider: '', title: '', url: '', icon_slug: '', icon_color: '5A6672', sort_order: 0 });
+  const [form, setForm] = useState({ provider: '', title: '', url: '', icon_slug: '', icon_color: '5A6672', icon_svg: '', icon_viewbox: '0 0 48 48', sort_order: 0 });
   const [status, setStatus] = useState('');
 
   const load = async () => {
@@ -62,7 +62,7 @@ function CertificatesTab() {
       setStatus(error.message);
     } else {
       setStatus('Added.');
-      setForm({ provider: '', title: '', url: '', icon_slug: '', icon_color: '5A6672', sort_order: 0 });
+      setForm({ provider: '', title: '', url: '', icon_slug: '', icon_color: '5A6672', icon_svg: '', icon_viewbox: '0 0 48 48', sort_order: 0 });
       load();
     }
   };
@@ -96,6 +96,14 @@ function CertificatesTab() {
           <input value={form.icon_color} onChange={(e) => setForm({ ...form, icon_color: e.target.value })} />
         </div>
         <div className="field">
+          <label>Advanced: custom full-color icon SVG (optional — inner SVG markup only, overrides the slug above)</label>
+          <textarea rows={3} value={form.icon_svg} onChange={(e) => setForm({ ...form, icon_svg: e.target.value })} placeholder='e.g. &lt;path fill="#4285F4" d="..." /&gt;' />
+        </div>
+        <div className="field">
+          <label>Icon viewBox (only needed with custom SVG above)</label>
+          <input value={form.icon_viewbox} onChange={(e) => setForm({ ...form, icon_viewbox: e.target.value })} />
+        </div>
+        <div className="field">
           <label>Sort order (lower shows first)</label>
           <input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: e.target.value })} />
         </div>
@@ -120,7 +128,7 @@ function SkillsTab() {
   const [items, setItems] = useState([]);
   const [form, setForm] = useState({
     name: '', group_name: 'Active practice', level_label: 'practicing',
-    icon_slug: '', icon_color: '4FD1C5', sort_order: 0,
+    icon_slug: '', icon_color: '4FD1C5', icon_svg: '', icon_viewbox: '0 0 32 32', sort_order: 0,
   });
   const [status, setStatus] = useState('');
 
@@ -142,7 +150,7 @@ function SkillsTab() {
       setStatus(error.message);
     } else {
       setStatus('Added.');
-      setForm({ name: '', group_name: 'Active practice', level_label: 'practicing', icon_slug: '', icon_color: '4FD1C5', sort_order: 0 });
+      setForm({ name: '', group_name: 'Active practice', level_label: 'practicing', icon_slug: '', icon_color: '4FD1C5', icon_svg: '', icon_viewbox: '0 0 32 32', sort_order: 0 });
       load();
     }
   };
@@ -178,6 +186,14 @@ function SkillsTab() {
         <div className="field">
           <label>Icon color (hex, no #)</label>
           <input value={form.icon_color} onChange={(e) => setForm({ ...form, icon_color: e.target.value })} />
+        </div>
+        <div className="field">
+          <label>Advanced: custom full-color icon SVG (optional — inner SVG markup only, overrides the slug above)</label>
+          <textarea rows={3} value={form.icon_svg} onChange={(e) => setForm({ ...form, icon_svg: e.target.value })} placeholder='e.g. &lt;rect ... /&gt;' />
+        </div>
+        <div className="field">
+          <label>Icon viewBox (only needed with custom SVG above)</label>
+          <input value={form.icon_viewbox} onChange={(e) => setForm({ ...form, icon_viewbox: e.target.value })} />
         </div>
         <div className="field">
           <label>Sort order (lower shows first)</label>
