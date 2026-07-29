@@ -15,6 +15,8 @@ import AdminLogin from './components/admin/AdminLogin';
 import AdminDashboard from './components/admin/AdminDashboard';
 import ProtectedRoute from './components/admin/ProtectedRoute';
 
+import { Analytics } from "@vercel/analytics/next" 
+
 function App() {
   return (
     <Router>
