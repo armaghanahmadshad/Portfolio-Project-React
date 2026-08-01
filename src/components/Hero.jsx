@@ -28,8 +28,7 @@ export default function Hero() {
           </div>
 
           <div className="hero-v3-cta">
-            {/* Note: You may want to change this to an ID link like href="#projects" for a single-page app */}
-            <a href="projects.html" className="btn-dark-pill">VIEW MY WORK
+            <a href="/#projects" className="btn-dark-pill">VIEW MY WORK
               <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
                 <path 
                   d="M7 17L17 7M17 7H9M17 7V15" 
@@ -40,6 +39,9 @@ export default function Hero() {
                   fill="none" 
                 />
               </svg>
+            </a>
+            <a href="https://www.linkedin.com/in/armaghanahmadshad" target="_blank" rel="noopener noreferrer" className="btn-outline-pill">
+              LINKEDIN
             </a>
           </div>
 
@@ -66,6 +68,7 @@ export default function Hero() {
         </div>
 
         <div className="hero-v3-visual">
+          <div className="hero-v3-blob" aria-hidden="true"></div>
           <img src="/assets/hero-photo-panel.png" alt="Armaghan Ahmad Shad portrait panel" className="hero-v3-photo" />
         </div>
       </div>

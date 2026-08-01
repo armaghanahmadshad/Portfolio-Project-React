@@ -15,6 +15,7 @@
   --radius: 8px;
   --mono: "JetBrains Mono", "Consolas", monospace;
   --sans: "Manrope", -apple-system, BlinkMacSystemFont, sans-serif;
+  --display: "Fraunces", Georgia, "Times New Roman", serif;
   --maxw: 1120px;
   --bg-gradient: radial-gradient(circle at top, rgba(245,158,11,0.08), transparent 24%), radial-gradient(circle at 84% 14%, rgba(15,23,42,0.05), transparent 18%);
 }
@@ -95,27 +96,30 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
    ========================================================= */
 header.site-nav {
   position: sticky;
-  top: 0;
+  top: 18px;
   z-index: 50;
-  background: #0F172A;
-  backdrop-filter: none;
-  border-bottom: none;
+  background: transparent;
+  padding: 0 20px;
 }
 
 .nav-inner {
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: 16px 28px;
+  padding: 10px 10px 10px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  background: #FFFFFF;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
 }
 
 .nav-logo {
   font-family: var(--sans);
   font-weight: 700;
   font-size: 14px;
-  color: #FFFFFF;
+  color: var(--text);
   text-decoration: none;
   display: flex;
   align-items: center;
@@ -187,7 +191,7 @@ header.site-nav {
 }
 .nav-links a {
   text-decoration: none;
-  color: #FFFFFF;
+  color: var(--text-dim);
   transition: color .2s ease;
 }
 .nav-links a:hover { color: var(--accent-cyan); }
@@ -281,10 +285,10 @@ header.site-nav {
   margin-bottom: 14px;
 }
 .hero-v3-name {
-  font-family: var(--sans);
-  font-weight: 800;
-  font-size: clamp(38px, 5.2vw, 64px);
-  line-height: 1.05;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(38px, 5.2vw, 66px);
+  line-height: 1.08;
   letter-spacing: -0.01em;
   color: var(--text);
   margin: 0 0 18px;
@@ -329,6 +333,10 @@ header.site-nav {
 }
 .hero-v3-cta {
   margin-bottom: 34px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 .btn-dark-pill {
   display: inline-flex;
@@ -340,14 +348,35 @@ header.site-nav {
   letter-spacing: 0.4px;
   color: #FFFFFF;
   background: #0F172A;
-  border-radius: var(--radius);
-  padding: 15px 26px;
+  border-radius: 999px;
+  padding: 15px 28px;
   text-decoration: none;
   transition: transform .2s ease, box-shadow .2s ease;
 }
 .btn-dark-pill:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.25);
+}
+.btn-outline-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.4px;
+  color: var(--text);
+  background: transparent;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  padding: 13.5px 26px;
+  text-decoration: none;
+  transition: transform .2s ease, border-color .2s ease, background .2s ease;
+}
+.btn-outline-pill:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-amber);
+  background: rgba(245, 158, 11, 0.06);
 }
 .hero-v3-follow {
   display: flex;
@@ -383,13 +412,30 @@ header.site-nav {
 .hero-v3-visual {
   display: flex;
   justify-content: center;
+  position: relative;
+}
+.hero-v3-blob {
+  position: absolute;
+  width: 92%;
+  height: 92%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-6deg);
+  border-radius: 42% 58% 65% 35% / 45% 40% 60% 55%;
+  background:
+    radial-gradient(circle, rgba(15,23,42,0.14) 1.6px, transparent 1.6px) 0 0 / 22px 22px,
+    linear-gradient(135deg, var(--accent-amber), #FCD34D);
+  z-index: 0;
 }
 .hero-v3-photo {
+  position: relative;
+  z-index: 1;
   width: 100%;
   max-width: 480px;
   height: auto;
   border-radius: 22px;
   display: block;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
 }
 
 @media (max-width: 900px) {
@@ -952,7 +998,7 @@ header.site-nav {
   justify-content: flex-start;
   border: 1px solid var(--line);
   background: var(--bg-elev);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 20px;
   text-align: left;
   transition: all .25s ease;
@@ -1010,7 +1056,7 @@ header.site-nav {
   justify-content: flex-start;
   border: 1px solid var(--line);
   background: #FFFFFF;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 20px;
   text-align: left;
   color: inherit;
@@ -1082,7 +1128,7 @@ header.site-nav {
    ========================================================= */
 .project-card {
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 14px;
   background: var(--bg-elev);
   overflow: hidden;
   margin-bottom: 28px;
@@ -1149,7 +1195,7 @@ header.site-nav {
 
 .blog-card {
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 14px;
   background: var(--bg-elev);
   padding: 26px;
   text-decoration: none;
@@ -1400,7 +1446,29 @@ footer {
   font-size: 13.5px;
   color: var(--text-dim);
   background: var(--bg-elev);
+  transition: border-color .15s ease, background .15s ease;
 }
+.admin-entry-row.is-editing {
+  border-color: var(--accent-cyan);
+  background: rgba(245, 158, 11, 0.06);
+}
+.admin-entry-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.admin-edit-btn {
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color .15s ease, color .15s ease;
+}
+.admin-edit-btn:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
 .admin-delete-btn {
   background: none;
   border: 1px solid rgba(242, 166, 90, 0.4);
@@ -1414,3 +1482,39 @@ footer {
   transition: background .15s ease;
 }
 .admin-delete-btn:hover { background: rgba(242, 166, 90, 0.12); }
+
+/* =========================================================
+   VIP CARD POLISH — premium top accent + subtle glow on hover
+   Applied across feature/cert/skill/project/blog cards
+   ========================================================= */
+.feature-card,
+.cert-card,
+.skill-card,
+.project-card,
+.blog-card {
+  position: relative;
+  overflow: hidden;
+}
+.feature-card::before,
+.cert-card::before,
+.skill-card::before,
+.project-card::before,
+.blog-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-amber), #FCD34D 55%, transparent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .3s ease;
+}
+.feature-card:hover::before,
+.cert-card:hover::before,
+.skill-card:hover::before,
+.project-card:hover::before,
+.blog-card:hover::before {
+  transform: scaleX(1);
+}

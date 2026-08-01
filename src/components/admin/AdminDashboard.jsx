@@ -11,25 +11,21 @@ function slugify(text) {
 }
 
 // ---------------------------------------------------------------------------
-// Generic list + delete button, used by every tab
+// Generic list + edit/delete buttons, used by every tab
 // ---------------------------------------------------------------------------
-function EntryList({ items, renderLabel, onDelete }) {
+function EntryList({ items, renderLabel, onEdit, onDelete, editingId }) {
   if (!items.length) {
     return <p style={{ color: 'var(--text-faint)' }}>Nothing added yet.</p>;
   }
   return (
     <ul className="admin-entry-list">
       {items.map((item) => (
-        <li key={item.id} className="admin-entry-row">
+        <li key={item.id} className={`admin-entry-row${editingId === item.id ? ' is-editing' : ''}`}>
           <span>{renderLabel(item)}</span>
-          <button
-            type="button"
-            className="admin-delete-btn"
-            onClick={() => onDelete(item.id)}
-            aria-label="Delete"
-          >
-            Delete
-          </button>
+          <span className="admin-entry-actions">
+            <button type="button" className="admin-edit-btn" onClick={() => onEdit(item)}>Edit</button>
+            <button type="button" className="admin-delete-btn" onClick={() => onDelete(item.id)}>Delete</button>
+          </span>
         </li>
       ))}
     </ul>
@@ -39,9 +35,12 @@ function EntryList({ items, renderLabel, onDelete }) {
 // ---------------------------------------------------------------------------
 // Certificates tab
 // ---------------------------------------------------------------------------
+const EMPTY_CERT = { provider: '', title: '', url: '', icon_slug: '', icon_color: '5A6672', icon_svg: '', icon_viewbox: '0 0 48 48', sort_order: 0 };
+
 function CertificatesTab() {
   const [items, setItems] = useState([]);
-  const [form, setForm] = useState({ provider: '', title: '', url: '', icon_slug: '', icon_color: '5A6672', icon_svg: '', icon_viewbox: '0 0 48 48', sort_order: 0 });
+  const [form, setForm] = useState(EMPTY_CERT);
+  const [editingId, setEditingId] = useState(null);
   const [status, setStatus] = useState('');
 
   const load = async () => {
@@ -51,24 +50,47 @@ function CertificatesTab() {
 
   useEffect(() => { load(); }, []);
 
+  const resetForm = () => {
+    setForm(EMPTY_CERT);
+    setEditingId(null);
+  };
+
+  const handleEdit = (item) => {
+    setEditingId(item.id);
+    setForm({
+      provider: item.provider || '',
+      title: item.title || '',
+      url: item.url || '',
+      icon_slug: item.icon_slug || '',
+      icon_color: item.icon_color || '5A6672',
+      icon_svg: item.icon_svg || '',
+      icon_viewbox: item.icon_viewbox || '0 0 48 48',
+      sort_order: item.sort_order ?? 0,
+    });
+    setStatus('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus('Saving…');
-    const { error } = await supabase.from('certificates').insert([{
-      ...form,
-      sort_order: Number(form.sort_order) || 0,
-    }]);
+    const payload = { ...form, sort_order: Number(form.sort_order) || 0 };
+
+    const { error } = editingId
+      ? await supabase.from('certificates').update(payload).eq('id', editingId)
+      : await supabase.from('certificates').insert([payload]);
+
     if (error) {
       setStatus(error.message);
     } else {
-      setStatus('Added.');
-      setForm({ provider: '', title: '', url: '', icon_slug: '', icon_color: '5A6672', icon_svg: '', icon_viewbox: '0 0 48 48', sort_order: 0 });
+      setStatus(editingId ? 'Updated.' : 'Added.');
+      resetForm();
       load();
     }
   };
 
   const handleDelete = async (id) => {
     await supabase.from('certificates').delete().eq('id', id);
+    if (editingId === id) resetForm();
     load();
   };
 
@@ -107,14 +129,25 @@ function CertificatesTab() {
           <label>Sort order (lower shows first)</label>
           <input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: e.target.value })} />
         </div>
-        <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>Add certificate</button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
+            {editingId ? 'Save changes' : 'Add certificate'}
+          </button>
+          {editingId && (
+            <button type="button" className="btn" style={{ alignSelf: 'flex-start' }} onClick={resetForm}>
+              Cancel edit
+            </button>
+          )}
+        </div>
         {status && <p className="form-status">{status}</p>}
       </form>
 
-      <h3 className="admin-list-heading">Existing (admin-added) certificates</h3>
+      <h3 className="admin-list-heading">Existing certificates</h3>
       <EntryList
         items={items}
+        editingId={editingId}
         renderLabel={(c) => `${c.provider} — ${c.title}`}
+        onEdit={handleEdit}
         onDelete={handleDelete}
       />
     </div>
@@ -124,12 +157,15 @@ function CertificatesTab() {
 // ---------------------------------------------------------------------------
 // Skills tab
 // ---------------------------------------------------------------------------
+const EMPTY_SKILL = {
+  name: '', group_name: 'Active practice', level_label: 'practicing',
+  icon_slug: '', icon_color: '4FD1C5', icon_svg: '', icon_viewbox: '0 0 32 32', sort_order: 0,
+};
+
 function SkillsTab() {
   const [items, setItems] = useState([]);
-  const [form, setForm] = useState({
-    name: '', group_name: 'Active practice', level_label: 'practicing',
-    icon_slug: '', icon_color: '4FD1C5', icon_svg: '', icon_viewbox: '0 0 32 32', sort_order: 0,
-  });
+  const [form, setForm] = useState(EMPTY_SKILL);
+  const [editingId, setEditingId] = useState(null);
   const [status, setStatus] = useState('');
 
   const load = async () => {
@@ -139,24 +175,47 @@ function SkillsTab() {
 
   useEffect(() => { load(); }, []);
 
+  const resetForm = () => {
+    setForm(EMPTY_SKILL);
+    setEditingId(null);
+  };
+
+  const handleEdit = (item) => {
+    setEditingId(item.id);
+    setForm({
+      name: item.name || '',
+      group_name: item.group_name || 'Active practice',
+      level_label: item.level_label || 'practicing',
+      icon_slug: item.icon_slug || '',
+      icon_color: item.icon_color || '4FD1C5',
+      icon_svg: item.icon_svg || '',
+      icon_viewbox: item.icon_viewbox || '0 0 32 32',
+      sort_order: item.sort_order ?? 0,
+    });
+    setStatus('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus('Saving…');
-    const { error } = await supabase.from('skills').insert([{
-      ...form,
-      sort_order: Number(form.sort_order) || 0,
-    }]);
+    const payload = { ...form, sort_order: Number(form.sort_order) || 0 };
+
+    const { error } = editingId
+      ? await supabase.from('skills').update(payload).eq('id', editingId)
+      : await supabase.from('skills').insert([payload]);
+
     if (error) {
       setStatus(error.message);
     } else {
-      setStatus('Added.');
-      setForm({ name: '', group_name: 'Active practice', level_label: 'practicing', icon_slug: '', icon_color: '4FD1C5', icon_svg: '', icon_viewbox: '0 0 32 32', sort_order: 0 });
+      setStatus(editingId ? 'Updated.' : 'Added.');
+      resetForm();
       load();
     }
   };
 
   const handleDelete = async (id) => {
     await supabase.from('skills').delete().eq('id', id);
+    if (editingId === id) resetForm();
     load();
   };
 
@@ -199,14 +258,25 @@ function SkillsTab() {
           <label>Sort order (lower shows first)</label>
           <input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: e.target.value })} />
         </div>
-        <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>Add skill</button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
+            {editingId ? 'Save changes' : 'Add skill'}
+          </button>
+          {editingId && (
+            <button type="button" className="btn" style={{ alignSelf: 'flex-start' }} onClick={resetForm}>
+              Cancel edit
+            </button>
+          )}
+        </div>
         {status && <p className="form-status">{status}</p>}
       </form>
 
-      <h3 className="admin-list-heading">Existing (admin-added) skills</h3>
+      <h3 className="admin-list-heading">Existing skills</h3>
       <EntryList
         items={items}
+        editingId={editingId}
         renderLabel={(s) => `${s.name} — ${s.group_name} (${s.level_label})`}
+        onEdit={handleEdit}
         onDelete={handleDelete}
       />
     </div>
@@ -216,12 +286,15 @@ function SkillsTab() {
 // ---------------------------------------------------------------------------
 // Blog posts tab
 // ---------------------------------------------------------------------------
+const EMPTY_POST = {
+  slug: '', title: '', category: 'General', read_time: '5 min read',
+  excerpt: '', content_md: '', published: true, sort_order: 0,
+};
+
 function BlogTab() {
   const [items, setItems] = useState([]);
-  const [form, setForm] = useState({
-    slug: '', title: '', category: 'General', read_time: '5 min read',
-    excerpt: '', content_md: '', published: true, sort_order: 0,
-  });
+  const [form, setForm] = useState(EMPTY_POST);
+  const [editingId, setEditingId] = useState(null);
   const [status, setStatus] = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
 
@@ -232,6 +305,28 @@ function BlogTab() {
 
   useEffect(() => { load(); }, []);
 
+  const resetForm = () => {
+    setForm(EMPTY_POST);
+    setEditingId(null);
+    setSlugTouched(false);
+  };
+
+  const handleEdit = (item) => {
+    setEditingId(item.id);
+    setSlugTouched(true); // don't auto-regenerate the slug while editing
+    setForm({
+      slug: item.slug || '',
+      title: item.title || '',
+      category: item.category || 'General',
+      read_time: item.read_time || '5 min read',
+      excerpt: item.excerpt || '',
+      content_md: item.content_md || '',
+      published: item.published ?? true,
+      sort_order: item.sort_order ?? 0,
+    });
+    setStatus('');
+  };
+
   const handleTitleChange = (title) => {
     setForm((f) => ({ ...f, title, slug: slugTouched ? f.slug : slugify(title) }));
   };
@@ -239,22 +334,24 @@ function BlogTab() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus('Saving…');
-    const { error } = await supabase.from('blog_posts').insert([{
-      ...form,
-      sort_order: Number(form.sort_order) || 0,
-    }]);
+    const payload = { ...form, sort_order: Number(form.sort_order) || 0 };
+
+    const { error } = editingId
+      ? await supabase.from('blog_posts').update(payload).eq('id', editingId)
+      : await supabase.from('blog_posts').insert([payload]);
+
     if (error) {
       setStatus(error.message);
     } else {
-      setStatus('Added.');
-      setForm({ slug: '', title: '', category: 'General', read_time: '5 min read', excerpt: '', content_md: '', published: true, sort_order: 0 });
-      setSlugTouched(false);
+      setStatus(editingId ? 'Updated.' : 'Added.');
+      resetForm();
       load();
     }
   };
 
   const handleDelete = async (id) => {
     await supabase.from('blog_posts').delete().eq('id', id);
+    if (editingId === id) resetForm();
     load();
   };
 
@@ -298,14 +395,25 @@ function BlogTab() {
             /> Published (visible on the site)
           </label>
         </div>
-        <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>Add blog post</button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
+            {editingId ? 'Save changes' : 'Add blog post'}
+          </button>
+          {editingId && (
+            <button type="button" className="btn" style={{ alignSelf: 'flex-start' }} onClick={resetForm}>
+              Cancel edit
+            </button>
+          )}
+        </div>
         {status && <p className="form-status">{status}</p>}
       </form>
 
-      <h3 className="admin-list-heading">Existing (admin-added) posts</h3>
+      <h3 className="admin-list-heading">Existing posts</h3>
       <EntryList
         items={items}
+        editingId={editingId}
         renderLabel={(p) => `${p.title} ${p.published ? '' : '(draft)'} — /blog/${p.slug}`}
+        onEdit={handleEdit}
         onDelete={handleDelete}
       />
     </div>
