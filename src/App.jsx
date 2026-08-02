@@ -1,9 +1,16 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import Home from './components/Home';
+import About from './components/About';
+import Skills from './components/Skills';
+import Certificates from './components/certificates';
+import Projects from './components/Projects';
+import Blog from './components/Blog.jsx';
+import Contact from './components/Contact';
 
-// Aapke chaaron (4) blog components yahan import ho rahe hain:
+// Hand-written blog posts
 import LinuxHomeServer from './components/blog/LinuxHomeServer';
 import DockerComposeToKubernetes from './components/blog/DockerComposeToKubernetes';
 import GitOpsVsTraditionalOps from './components/blog/GitOpsVsTraditionalOps';
@@ -15,16 +22,29 @@ import AdminLogin from './components/admin/AdminLogin';
 import AdminDashboard from './components/admin/AdminDashboard';
 import ProtectedRoute from './components/admin/ProtectedRoute';
 
-import { Analytics } from "@vercel/analytics/react" ;
+function Page({ children }) {
+  return <main id="top">{children}</main>;
+}
 
-function App() {
+function Layout() {
+  const location = useLocation();
+  const isAdmin = location.pathname.startsWith('/admin');
+
   return (
-    <Router>
+    <>
       <Navbar />
       <Routes>
-        {/* Main Home Page */}
+        {/* Home (landing) */}
         <Route path="/" element={<Home />} />
-        
+
+        {/* Standalone pages */}
+        <Route path="/about" element={<Page><About /></Page>} />
+        <Route path="/skills" element={<Page><Skills /></Page>} />
+        <Route path="/certificates" element={<Page><Certificates /></Page>} />
+        <Route path="/projects" element={<Page><Projects /></Page>} />
+        <Route path="/blog" element={<Page><Blog /></Page>} />
+        <Route path="/contact" element={<Page><Contact /></Page>} />
+
         {/* Blog Pages (hand-written) */}
         <Route path="/blog/linux-home-server" element={<LinuxHomeServer />} />
         <Route path="/blog/compose-to-kubernetes" element={<DockerComposeToKubernetes />} />
@@ -45,6 +65,15 @@ function App() {
           }
         />
       </Routes>
+      {!isAdmin && <Footer />}
+    </>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <Layout />
     </Router>
   );
 }

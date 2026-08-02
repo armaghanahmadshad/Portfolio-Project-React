@@ -5,7 +5,7 @@ export default function WhyLearnCICDEarly() {
   return (
     <main id="top">
       <div className="post-wrap">
-        <Link to="/" className="post-back">← back to all posts</Link>
+        <Link to="/blog" className="post-back">← back to all posts</Link>
         <p className="post-meta">CI/CD · 6 min read · student notes</p>
         <h1>Why Every Developer Should Learn CI/CD Early</h1>
 

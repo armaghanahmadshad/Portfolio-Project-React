@@ -5,7 +5,7 @@ export default function DockerComposeToKubernetes() {
   return (
     <main id="top">
       <div className="post-wrap">
-        <Link to="/" className="post-back">← back to all posts</Link>
+        <Link to="/blog" className="post-back">← back to all posts</Link>
         <p className="post-meta">Containers · 6 min read · student notes</p>
         <h1>Docker Compose to Kubernetes: A Student's Roadmap</h1>
 

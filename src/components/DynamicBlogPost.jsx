@@ -43,7 +43,7 @@ export default function DynamicBlogPost() {
     return (
       <main id="top">
         <article className="post-wrap">
-          <Link to="/#blog" className="post-back">← Back to blog</Link>
+          <Link to="/blog" className="post-back">← Back to blog</Link>
           <h1>Post not found</h1>
           <p>This post doesn't exist or isn't published yet.</p>
         </article>
@@ -54,7 +54,7 @@ export default function DynamicBlogPost() {
   return (
     <main id="top">
       <article className="post-wrap">
-        <Link to="/#blog" className="post-back">← Back to blog</Link>
+        <Link to="/blog" className="post-back">← Back to blog</Link>
         <span className="post-meta">{post.category} — {post.read_time}</span>
         <h1>{post.title}</h1>
         {renderMarkdownLite(post.content_md)}

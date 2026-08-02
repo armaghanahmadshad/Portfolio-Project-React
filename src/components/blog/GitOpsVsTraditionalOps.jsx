@@ -5,7 +5,7 @@ export default function GitOpsVsTraditionalOps() {
   return (
     <main id="top">
       <div className="post-wrap">
-        <Link to="/" className="post-back">← back to all posts</Link>
+        <Link to="/blog" className="post-back">← back to all posts</Link>
         <p className="post-meta">GitOps · 7 min read · student notes</p>
         <h1>GitOps vs Traditional Ops: What I Learned Shipping My First Pipeline</h1>
 

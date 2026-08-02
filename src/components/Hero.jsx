@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 export default function Hero() {
   return (
@@ -7,7 +8,19 @@ export default function Hero() {
         <div className="hero-v3-copy">
           <span className="hero-v3-eyebrow">HELLO, I'M</span>
           <h1 className="hero-v3-name">Armaghan<br /><span className="accent">Ahmad Shad</span></h1>
-          <p className="hero-v3-role">DevOps &amp; Cloud Engineer <span className="hero-v3-role-dim">(in progress)</span></p>
+          <p className="hero-v3-role">
+            <svg viewBox="0 0 24 24" width="17" height="17" className="hero-v3-role-icon" aria-hidden="true">
+              <path
+                d="M7 18h10a4 4 0 0 0 .6-7.96A5.5 5.5 0 0 0 7.2 9.05 4 4 0 0 0 7 18Z"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            DevOps &amp; Cloud Engineer <span className="hero-v3-role-dim">(in progress)</span>
+          </p>
           <p className="hero-v3-desc">
             I'm a BS Information Technology student building toward cloud and DevOps engineering — learning pipelines, infrastructure code, and containers through real practice projects.
           </p>
@@ -28,7 +41,7 @@ export default function Hero() {
           </div>
 
           <div className="hero-v3-cta">
-            <a href="/#projects" className="btn-dark-pill">VIEW MY WORK
+            <Link to="/projects" className="btn-dark-pill">VIEW MY WORK
               <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
                 <path 
                   d="M7 17L17 7M17 7H9M17 7V15" 
@@ -39,7 +52,7 @@ export default function Hero() {
                   fill="none" 
                 />
               </svg>
-            </a>
+            </Link>
             <a href="https://www.linkedin.com/in/armaghanahmadshad" target="_blank" rel="noopener noreferrer" className="btn-outline-pill">
               LINKEDIN
             </a>

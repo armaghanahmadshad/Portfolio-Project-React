@@ -5,7 +5,7 @@ export default function LinuxHomeServer() {
   return (
     <main id="top">
       <article className="post-wrap">
-        <Link to="/" className="post-back">← Back to blog</Link>
+        <Link to="/blog" className="post-back">← Back to blog</Link>
         <span className="post-meta">Linux / Sysadmin — 8 min read</span>
         <h1>Building a Linux Home Server From Scratch: A DevOps Learning Project</h1>
 
