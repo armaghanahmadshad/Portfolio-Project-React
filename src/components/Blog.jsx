@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 
@@ -67,6 +67,16 @@ export default function Blog() {
             <h3>Docker Compose to Kubernetes: A Student's Roadmap</h3>
             <p>
               A realistic, unhurried path from a single docker-compose.yml to understanding what Kubernetes is actually solving.
+            </p>
+            <span className="read">Read post →</span>
+          </Link>
+          
+          {/* Link 5: Azure Fundamentals Journey */}
+          <Link to="/blog/azure-fundamentals-journey" className="blog-card reveal">
+            <span className="meta">Cloud / Azure — 6 min read</span>
+            <h3>From AZ-900 to AZ-104: What Studying Azure Actually Taught Me</h3>
+            <p>
+              Cloud vocabulary, identity and access parallels with Linux permissions, and what transferred when I picked up AWS Cloud Practitioner next.
             </p>
             <span className="read">Read post →</span>
           </Link>

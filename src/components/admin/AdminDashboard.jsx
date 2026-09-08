@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 
@@ -48,6 +48,10 @@ function CertificatesTab() {
     setItems(data || []);
   };
 
+  // One-time fetch on mount. `load()` awaits Supabase then calls setState;
+  // that's the standard data-fetching pattern, not the render-cascade issue
+  // this rule is designed to catch, so it's safe to disable here.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, []);
 
   const resetForm = () => {
@@ -173,6 +177,10 @@ function SkillsTab() {
     setItems(data || []);
   };
 
+  // One-time fetch on mount. `load()` awaits Supabase then calls setState;
+  // that's the standard data-fetching pattern, not the render-cascade issue
+  // this rule is designed to catch, so it's safe to disable here.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, []);
 
   const resetForm = () => {
@@ -303,6 +311,10 @@ function BlogTab() {
     setItems(data || []);
   };
 
+  // One-time fetch on mount. `load()` awaits Supabase then calls setState;
+  // that's the standard data-fetching pattern, not the render-cascade issue
+  // this rule is designed to catch, so it's safe to disable here.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, []);
 
   const resetForm = () => {

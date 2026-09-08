@@ -1,0 +1,799 @@
+From 9bcaa3331fe28c9a8366842b4b9672c82c651c04 Mon Sep 17 00:00:00 2001
+From: Armaghan Ahmad Shad <armaghanahmadshad@gmail.com>
+Date: Tue, 8 Sep 2026 01:37:44 +0000
+Subject: [PATCH] Content sync, code-splitting, lint cleanup, new blog post
+
+- Lazy-load routes (React.lazy/Suspense) to cut initial bundle from
+  501KB to 452KB; admin dashboard and blog posts now ship as
+  on-demand chunks instead of in the main bundle.
+- Sync real content: Hero stats (40+ certs, 6 projects, 12+ tools),
+  About timeline (add NeuroFive internship + MSA role), Projects
+  (add Smart Campus Automation System, MediFlow, Apna ChatBot,
+  Live Crypto Pulse to the existing 2).
+- Add supabase/seed_real_data.sql with real certificates + skills
+  data, ready to run in the Supabase SQL editor (certificates/skills
+  are DB-driven, so this can't be pushed programmatically without
+  project credentials).
+- New blog post: 'From AZ-900 to AZ-104' covering the Azure/AWS
+  cloud fundamentals learning path, wired into routing + blog list.
+- Lint cleanup: removed unused default React imports across ~20
+  files (React 19 + Vite's automatic JSX runtime doesn't need them);
+  documented eslint-disable for 3 false-positive set-state-in-effect
+  warnings on a standard fetch-on-mount pattern in AdminDashboard.
+---
+ src/App.jsx                                   | 107 +++++++------
+ src/components/About.jsx                      |  14 +-
+ src/components/Blog.jsx                       |  12 +-
+ src/components/Contact.jsx                    |   1 -
+ src/components/DynamicBlogPost.jsx            |   2 +-
+ src/components/Footer.jsx                     |   1 -
+ src/components/Hero.jsx                       |   7 +-
+ src/components/Home.jsx                       |   2 +-
+ src/components/Navbar.jsx                     |   2 +-
+ src/components/Projects.jsx                   | 142 +++++++++++++++++-
+ src/components/Skills.jsx                     |   2 +-
+ src/components/ThemeToggle.jsx                |   2 +-
+ src/components/admin/AdminDashboard.jsx       |  14 +-
+ src/components/admin/AdminLogin.jsx           |   2 +-
+ src/components/admin/ProtectedRoute.jsx       |   1 -
+ .../blog/AzureFundamentalsJourney.jsx         |  71 +++++++++
+ .../blog/DockerComposeToKubernetes.jsx        |   1 -
+ .../blog/GitOpsVsTraditionalOps.jsx           |   1 -
+ src/components/blog/LinuxHomeServer.jsx       |   1 -
+ src/components/blog/WhyLearnCICDEarly.jsx     |   1 -
+ src/components/certificates.jsx               |   2 +-
+ src/lib/renderMarkdownLite.jsx                |   1 -
+ supabase/seed_real_data.sql                   |  85 +++++++++++
+ 23 files changed, 408 insertions(+), 66 deletions(-)
+ create mode 100644 src/components/blog/AzureFundamentalsJourney.jsx
+ create mode 100644 supabase/seed_real_data.sql
+
+diff --git a/src/App.jsx b/src/App.jsx
+index 4c3cbab..943416e 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -1,31 +1,51 @@
+-import React from 'react';
++import { Suspense, lazy } from 'react';
+ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+ import Navbar from './components/Navbar';
+ import Footer from './components/Footer';
+ import Home from './components/Home';
+-import About from './components/About';
+-import Skills from './components/Skills';
+-import Certificates from './components/certificates';
+-import Projects from './components/Projects';
+-import Blog from './components/Blog.jsx';
+-import Contact from './components/Contact';
++
++// Route-level code splitting: everything below is loaded on demand instead
++// of being bundled into the initial page load. This matters most for the
++// admin dashboard (Supabase CRUD UI) and the individual blog posts, since
++// the vast majority of visitors never touch either — they were previously
++// shipped to every visitor as part of one 500KB+ bundle.
++const About = lazy(() => import('./components/About'));
++const Skills = lazy(() => import('./components/Skills'));
++const Certificates = lazy(() => import('./components/certificates'));
++const Projects = lazy(() => import('./components/Projects'));
++const Blog = lazy(() => import('./components/Blog.jsx'));
++const Contact = lazy(() => import('./components/Contact'));
+ 
+ // Hand-written blog posts
+-import LinuxHomeServer from './components/blog/LinuxHomeServer';
+-import DockerComposeToKubernetes from './components/blog/DockerComposeToKubernetes';
+-import GitOpsVsTraditionalOps from './components/blog/GitOpsVsTraditionalOps';
+-import WhyLearnCICDEarly from './components/blog/WhyLearnCICDEarly';
++const LinuxHomeServer = lazy(() => import('./components/blog/LinuxHomeServer'));
++const DockerComposeToKubernetes = lazy(() => import('./components/blog/DockerComposeToKubernetes'));
++const GitOpsVsTraditionalOps = lazy(() => import('./components/blog/GitOpsVsTraditionalOps'));
++const WhyLearnCICDEarly = lazy(() => import('./components/blog/WhyLearnCICDEarly'));
++const AzureFundamentalsJourney = lazy(() => import('./components/blog/AzureFundamentalsJourney'));
+ 
+ // Dynamic (database-driven) blog posts + admin
+-import DynamicBlogPost from './components/DynamicBlogPost';
+-import AdminLogin from './components/admin/AdminLogin';
+-import AdminDashboard from './components/admin/AdminDashboard';
++const DynamicBlogPost = lazy(() => import('./components/DynamicBlogPost'));
++const AdminLogin = lazy(() => import('./components/admin/AdminLogin'));
++const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'));
+ import ProtectedRoute from './components/admin/ProtectedRoute';
+ 
+ function Page({ children }) {
+   return <main id="top">{children}</main>;
+ }
+ 
++// Minimal, brand-consistent fallback shown for the brief moment a lazy
++// route's code is downloading. Deliberately quiet — this should be
++// invisible on a normal connection and only noticeable on a slow one.
++function RouteFallback() {
++  return (
++    <div style={{ minHeight: '40vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
++      <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.85rem', color: '#5A6672' }}>
++        loading…
++      </span>
++    </div>
++  );
++}
++
+ function Layout() {
+   const location = useLocation();
+   const isAdmin = location.pathname.startsWith('/admin');
+@@ -33,38 +53,41 @@ function Layout() {
+   return (
+     <>
+       <Navbar />
+-      <Routes>
+-        {/* Home (landing) */}
+-        <Route path="/" element={<Home />} />
++      <Suspense fallback={<RouteFallback />}>
++        <Routes>
++          {/* Home (landing) */}
++          <Route path="/" element={<Home />} />
+ 
+-        {/* Standalone pages */}
+-        <Route path="/about" element={<Page><About /></Page>} />
+-        <Route path="/skills" element={<Page><Skills /></Page>} />
+-        <Route path="/certificates" element={<Page><Certificates /></Page>} />
+-        <Route path="/projects" element={<Page><Projects /></Page>} />
+-        <Route path="/blog" element={<Page><Blog /></Page>} />
+-        <Route path="/contact" element={<Page><Contact /></Page>} />
++          {/* Standalone pages */}
++          <Route path="/about" element={<Page><About /></Page>} />
++          <Route path="/skills" element={<Page><Skills /></Page>} />
++          <Route path="/certificates" element={<Page><Certificates /></Page>} />
++          <Route path="/projects" element={<Page><Projects /></Page>} />
++          <Route path="/blog" element={<Page><Blog /></Page>} />
++          <Route path="/contact" element={<Page><Contact /></Page>} />
+ 
+-        {/* Blog Pages (hand-written) */}
+-        <Route path="/blog/linux-home-server" element={<LinuxHomeServer />} />
+-        <Route path="/blog/compose-to-kubernetes" element={<DockerComposeToKubernetes />} />
+-        <Route path="/blog/first-pipeline-lessons" element={<GitOpsVsTraditionalOps />} />
+-        <Route path="/blog/why-learn-cicd-early" element={<WhyLearnCICDEarly />} />
++          {/* Blog Pages (hand-written) */}
++          <Route path="/blog/linux-home-server" element={<LinuxHomeServer />} />
++          <Route path="/blog/compose-to-kubernetes" element={<DockerComposeToKubernetes />} />
++          <Route path="/blog/first-pipeline-lessons" element={<GitOpsVsTraditionalOps />} />
++          <Route path="/blog/why-learn-cicd-early" element={<WhyLearnCICDEarly />} />
++          <Route path="/blog/azure-fundamentals-journey" element={<AzureFundamentalsJourney />} />
+ 
+-        {/* Blog posts added from the admin dashboard */}
+-        <Route path="/blog/:slug" element={<DynamicBlogPost />} />
++          {/* Blog posts added from the admin dashboard */}
++          <Route path="/blog/:slug" element={<DynamicBlogPost />} />
+ 
+-        {/* Admin */}
+-        <Route path="/admin/login" element={<AdminLogin />} />
+-        <Route
+-          path="/admin"
+-          element={
+-            <ProtectedRoute>
+-              <AdminDashboard />
+-            </ProtectedRoute>
+-          }
+-        />
+-      </Routes>
++          {/* Admin */}
++          <Route path="/admin/login" element={<AdminLogin />} />
++          <Route
++            path="/admin"
++            element={
++              <ProtectedRoute>
++                <AdminDashboard />
++              </ProtectedRoute>
++            }
++          />
++        </Routes>
++      </Suspense>
+       {!isAdmin && <Footer />}
+     </>
+   );
+diff --git a/src/components/About.jsx b/src/components/About.jsx
+index f25e75f..6dfebb8 100644
+--- a/src/components/About.jsx
++++ b/src/components/About.jsx
+@@ -1,4 +1,3 @@
+-import React from 'react';
+ 
+ export default function About() {
+   return (
+@@ -16,11 +15,24 @@ export default function About() {
+             <p>
+               I run technical sessions for peers and teach introductory infrastructure topics. This strengthens my ability to explain systems clearly and write documentation that teams can follow.
+             </p>
++            <p>
++              I recently completed a remote Full Stack Web Development internship with Neurofive Solutions, where I built React interfaces, deployed live applications, and worked with real data persistence — a useful contrast to the infrastructure-side projects below.
++            </p>
+             <p>
+               My current focus is on cloud fundamentals, Git-based delivery, infrastructure as code, and containerized workflows. I want to move beyond tutorials and create systems that stay reliable when they change.
+             </p>
+           </div>
+           <ul className="timeline reveal">
++            <li>
++              <div className="when">Jul 2026 — Aug 2026</div>
++              <div className="what">Full Stack Web Development Intern</div>
++              <div className="where">Neurofive Solutions (Remote)</div>
++            </li>
++            <li>
++              <div className="when">Mar 2025 — present</div>
++              <div className="what">Microsoft Learn Student Ambassador</div>
++              <div className="where">MSA · MNS UET Multan</div>
++            </li>
+             <li>
+               <div className="when">Jan 2025 — present</div>
+               <div className="what">Teacher</div>
+diff --git a/src/components/Blog.jsx b/src/components/Blog.jsx
+index 166cb83..7dc2b2a 100644
+--- a/src/components/Blog.jsx
++++ b/src/components/Blog.jsx
+@@ -1,4 +1,4 @@
+-import React, { useEffect, useState } from 'react';
++import { useEffect, useState } from 'react';
+ import { Link } from 'react-router-dom';
+ import { supabase } from '../lib/supabaseClient';
+ 
+@@ -71,6 +71,16 @@ export default function Blog() {
+             <span className="read">Read post →</span>
+           </Link>
+           
++          {/* Link 5: Azure Fundamentals Journey */}
++          <Link to="/blog/azure-fundamentals-journey" className="blog-card reveal">
++            <span className="meta">Cloud / Azure — 6 min read</span>
++            <h3>From AZ-900 to AZ-104: What Studying Azure Actually Taught Me</h3>
++            <p>
++              Cloud vocabulary, identity and access parallels with Linux permissions, and what transferred when I picked up AWS Cloud Practitioner next.
++            </p>
++            <span className="read">Read post →</span>
++          </Link>
++          
+           {/* Posts added from the admin dashboard */}
+           {dynamicPosts.map((post) => (
+             <Link key={post.id} to={`/blog/${post.slug}`} className="blog-card reveal">
+diff --git a/src/components/Contact.jsx b/src/components/Contact.jsx
+index 1f05ef2..2169576 100644
+--- a/src/components/Contact.jsx
++++ b/src/components/Contact.jsx
+@@ -1,4 +1,3 @@
+-import React from 'react';
+ 
+ export default function Contact() {
+   return (
+diff --git a/src/components/DynamicBlogPost.jsx b/src/components/DynamicBlogPost.jsx
+index 1b164ad..6348738 100644
+--- a/src/components/DynamicBlogPost.jsx
++++ b/src/components/DynamicBlogPost.jsx
+@@ -1,4 +1,4 @@
+-import React, { useEffect, useState } from 'react';
++import { useEffect, useState } from 'react';
+ import { useParams, Link } from 'react-router-dom';
+ import { supabase } from '../lib/supabaseClient';
+ import { renderMarkdownLite } from '../lib/renderMarkdownLite.jsx';
+diff --git a/src/components/Footer.jsx b/src/components/Footer.jsx
+index 5acd768..22aaf64 100644
+--- a/src/components/Footer.jsx
++++ b/src/components/Footer.jsx
+@@ -1,4 +1,3 @@
+-import React from 'react';
+ import { Link } from 'react-router-dom';
+ 
+ export default function Footer() {
+diff --git a/src/components/Hero.jsx b/src/components/Hero.jsx
+index 78b2671..28f1f38 100644
+--- a/src/components/Hero.jsx
++++ b/src/components/Hero.jsx
+@@ -1,4 +1,3 @@
+-import React from 'react';
+ import { Link } from 'react-router-dom';
+ 
+ export default function Hero() {
+@@ -27,15 +26,15 @@ export default function Hero() {
+ 
+           <div className="hero-v3-stats">
+             <div>
+-              <span className="hero-v3-stat-num">17+</span>
++              <span className="hero-v3-stat-num">40+</span>
+               <span className="hero-v3-stat-label">Certifications<br />Earned</span>
+             </div>
+             <div>
+-              <span className="hero-v3-stat-num">2</span>
++              <span className="hero-v3-stat-num">6</span>
+               <span className="hero-v3-stat-label">Practice Projects<br />Completed</span>
+             </div>
+             <div>
+-              <span className="hero-v3-stat-num">8+</span>
++              <span className="hero-v3-stat-num">12+</span>
+               <span className="hero-v3-stat-label">Tools &amp;<br />Technologies</span>
+             </div>
+           </div>
+diff --git a/src/components/Home.jsx b/src/components/Home.jsx
+index 72bde3d..42b1d22 100644
+--- a/src/components/Home.jsx
++++ b/src/components/Home.jsx
+@@ -1,4 +1,4 @@
+-import React, { useEffect } from 'react';
++import { useEffect } from 'react';
+ import { Link } from 'react-router-dom';
+ import Hero from './Hero';
+ 
+diff --git a/src/components/Navbar.jsx b/src/components/Navbar.jsx
+index 064888b..a1a0f70 100644
+--- a/src/components/Navbar.jsx
++++ b/src/components/Navbar.jsx
+@@ -1,4 +1,4 @@
+-import React, { useState } from 'react';
++import { useState } from 'react';
+ import { Link, NavLink } from 'react-router-dom';
+ import ThemeToggle from './ThemeToggle';
+ 
+diff --git a/src/components/Projects.jsx b/src/components/Projects.jsx
+index a9a8a7e..d955a6e 100644
+--- a/src/components/Projects.jsx
++++ b/src/components/Projects.jsx
+@@ -1,4 +1,3 @@
+-import React from 'react';
+ 
+ export default function Projects() {
+   return (
+@@ -8,7 +7,7 @@ export default function Projects() {
+           <span className="eyebrow">04 / projects</span>
+           <h2>Learning-in-public builds</h2>
+           <p>
+-            Two hands-on builds so far: this site, and a hardened home Linux server. Each one is small enough to finish and document properly rather than abandon halfway.
++            Six hands-on builds so far — this site, a hardened home Linux server, and four more spanning C++, TypeScript, Python, and API-driven web apps. Each one is small enough to finish and document properly rather than abandon halfway.
+           </p>
+         </div>
+ 
+@@ -97,6 +96,145 @@ export default function Projects() {
+             </div>
+           </div>
+         </article>
++
++        {/* Project 3 */}
++        <article className="project-card reveal">
++          <div className="project-visual">
++            <svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
++              <rect x="1" y="1" width="318" height="218" rx="8" fill="none" stroke="#1E2732" />
++              <g fontFamily="JetBrains Mono, monospace" fontSize="10" fill="#8B98A5">
++                <text x="160" y="26" textAnchor="middle" fill="#5A6672" fontSize="9">Smart Campus Automation</text>
++                <rect x="30" y="42" width="120" height="50" rx="5" fill="none" stroke="#F2A65A" />
++                <text x="90" y="63" textAnchor="middle" fill="#F2A65A" fontSize="9">Student</text>
++                <text x="90" y="78" textAnchor="middle" fill="#5A6672" fontSize="8">class + GPA</text>
++                <rect x="170" y="42" width="120" height="50" rx="5" fill="none" stroke="#4FD1C5" />
++                <text x="230" y="63" textAnchor="middle" fill="#4FD1C5" fontSize="9">Course</text>
++                <text x="230" y="78" textAnchor="middle" fill="#5A6672" fontSize="8">class + roster</text>
++                <rect x="30" y="104" width="120" height="50" rx="5" fill="none" stroke="#4FD1C5" />
++                <text x="90" y="125" textAnchor="middle" fill="#4FD1C5" fontSize="9">Attendance</text>
++                <text x="90" y="140" textAnchor="middle" fill="#5A6672" fontSize="8">class + log</text>
++                <rect x="170" y="104" width="120" height="50" rx="5" fill="none" stroke="#F2A65A" />
++                <text x="230" y="125" textAnchor="middle" fill="#F2A65A" fontSize="9">Fee Manager</text>
++                <text x="230" y="140" textAnchor="middle" fill="#5A6672" fontSize="8">class + ledger</text>
++                <text x="160" y="185" textAnchor="middle" fill="#5A6672" fontSize="9">C++ · Object-Oriented Design</text>
++              </g>
++            </svg>
++          </div>
++          <div className="project-body">
++            <span className="tag">C++ / OOP</span>
++            <h3>Smart Campus Automation System</h3>
++            <p className="desc">
++              A C++ object-oriented university management system modeling students, courses, attendance, GPA calculation, and fee management as cooperating classes. My strongest structured software project — proof that I can design more than scripts.
++            </p>
++            <ul className="stack-list">
++              <li>C++</li>
++              <li>OOP</li>
++              <li>Data Structures</li>
++            </ul>
++            <div className="project-links">
++              <a href="https://github.com/armaghanahmadshad" target="_blank" rel="noopener noreferrer">→ Repository</a>
++            </div>
++          </div>
++        </article>
++
++        {/* Project 4 */}
++        <article className="project-card reveal">
++          <div className="project-visual">
++            <svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
++              <rect x="1" y="1" width="318" height="218" rx="8" fill="none" stroke="#1E2732" />
++              <g fontFamily="JetBrains Mono, monospace" fontSize="10" fill="#8B98A5">
++                <text x="160" y="26" textAnchor="middle" fill="#5A6672" fontSize="9">MediFlow</text>
++                <rect x="24" y="44" width="272" height="34" rx="5" fill="none" stroke="#F2A65A" />
++                <text x="160" y="65" textAnchor="middle" fill="#F2A65A" fontSize="9">React UI — inventory &amp; requests</text>
++                <line x1="160" y1="78" x2="160" y2="94" stroke="#1E2732" strokeWidth="2" />
++                <rect x="24" y="96" width="272" height="34" rx="5" fill="none" stroke="#4FD1C5" />
++                <text x="160" y="117" textAnchor="middle" fill="#4FD1C5" fontSize="9">TypeScript service layer</text>
++                <line x1="160" y1="130" x2="160" y2="146" stroke="#1E2732" strokeWidth="2" />
++                <rect x="24" y="148" width="272" height="34" rx="5" fill="none" stroke="#4FD1C5" />
++                <text x="160" y="169" textAnchor="middle" fill="#4FD1C5" fontSize="9">Distribution records store</text>
++                <text x="160" y="200" textAnchor="middle" fill="#5A6672" fontSize="9">Typed, application-level development</text>
++              </g>
++            </svg>
++          </div>
++          <div className="project-body">
++            <span className="tag">TYPESCRIPT</span>
++            <h3>MediFlow — Medicine Distribution System</h3>
++            <p className="desc">
++              A TypeScript-based application for managing medicine distribution workflows — built to practice typed, application-level development beyond the scripting I'd done before.
++            </p>
++            <ul className="stack-list">
++              <li>TypeScript</li>
++              <li>Application Design</li>
++            </ul>
++            <div className="project-links">
++              <a href="https://github.com/armaghanahmadshad" target="_blank" rel="noopener noreferrer">→ Repository</a>
++            </div>
++          </div>
++        </article>
++
++        {/* Project 5 */}
++        <article className="project-card reveal">
++          <div className="project-visual">
++            <svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
++              <rect x="1" y="1" width="318" height="218" rx="8" fill="none" stroke="#1E2732" />
++              <g fontFamily="JetBrains Mono, monospace" fontSize="10" fill="#8B98A5">
++                <text x="160" y="26" textAnchor="middle" fill="#5A6672" fontSize="9">Apna ChatBot</text>
++                <rect x="40" y="44" width="140" height="26" rx="12" fill="none" stroke="#4FD1C5" />
++                <text x="110" y="61" textAnchor="middle" fill="#4FD1C5" fontSize="8">user: how do I reset SSH?</text>
++                <rect x="140" y="80" width="140" height="26" rx="12" fill="none" stroke="#F2A65A" />
++                <text x="210" y="97" textAnchor="middle" fill="#F2A65A" fontSize="8">bot: run sudo systemctl…</text>
++                <rect x="40" y="116" width="140" height="26" rx="12" fill="none" stroke="#4FD1C5" />
++                <text x="110" y="133" textAnchor="middle" fill="#4FD1C5" fontSize="8">user: thanks!</text>
++                <text x="160" y="175" textAnchor="middle" fill="#5A6672" fontSize="9">Python · conversational logic</text>
++                <text x="160" y="190" textAnchor="middle" fill="#5A6672" fontSize="9">AI-assisted development practice</text>
++              </g>
++            </svg>
++          </div>
++          <div className="project-body">
++            <span className="tag">PYTHON / AI</span>
++            <h3>Apna ChatBot</h3>
++            <p className="desc">
++              A Python chatbot exploring conversational logic — part of folding AI-assisted development into how I build and document projects.
++            </p>
++            <ul className="stack-list">
++              <li>Python</li>
++              <li>Conversational Logic</li>
++            </ul>
++            <div className="project-links">
++              <a href="https://github.com/armaghanahmadshad" target="_blank" rel="noopener noreferrer">→ Repository</a>
++            </div>
++          </div>
++        </article>
++
++        {/* Project 6 */}
++        <article className="project-card reveal">
++          <div className="project-visual">
++            <svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
++              <rect x="1" y="1" width="318" height="218" rx="8" fill="none" stroke="#1E2732" />
++              <g fontFamily="JetBrains Mono, monospace" fontSize="10" fill="#8B98A5">
++                <text x="160" y="26" textAnchor="middle" fill="#5A6672" fontSize="9">Live Crypto Pulse</text>
++                <polyline points="30,140 70,110 110,125 150,80 190,95 230,60 270,75" fill="none" stroke="#4FD1C5" strokeWidth="2" />
++                <rect x="20" y="46" width="280" height="120" rx="5" fill="none" stroke="#1E2732" />
++                <text x="160" y="184" textAnchor="middle" fill="#F2A65A" fontSize="9">REST API → live price feed</text>
++                <text x="160" y="200" textAnchor="middle" fill="#5A6672" fontSize="9">Vanilla JS · fetch() · external data</text>
++              </g>
++            </svg>
++          </div>
++          <div className="project-body">
++            <span className="tag">WEB / API</span>
++            <h3>Live Crypto Pulse</h3>
++            <p className="desc">
++              A web app surfacing live cryptocurrency prices via a public REST API — built to practice working with external, constantly-changing data on the frontend.
++            </p>
++            <ul className="stack-list">
++              <li>JavaScript</li>
++              <li>REST APIs</li>
++            </ul>
++            <div className="project-links">
++              <a href="https://github.com/armaghanahmadshad" target="_blank" rel="noopener noreferrer">→ Repository</a>
++            </div>
++          </div>
++        </article>
+       </div>
+     </section>
+   );
+diff --git a/src/components/Skills.jsx b/src/components/Skills.jsx
+index 7a943da..ef53107 100644
+--- a/src/components/Skills.jsx
++++ b/src/components/Skills.jsx
+@@ -1,4 +1,4 @@
+-import React, { useEffect, useState } from 'react';
++import { useEffect, useState } from 'react';
+ import { supabase } from '../lib/supabaseClient';
+ 
+ const GROUPS = ['Daily essentials', 'Active practice', 'Next on the roadmap'];
+diff --git a/src/components/ThemeToggle.jsx b/src/components/ThemeToggle.jsx
+index 2cc7dd6..71358a4 100644
+--- a/src/components/ThemeToggle.jsx
++++ b/src/components/ThemeToggle.jsx
+@@ -1,4 +1,4 @@
+-import React, { useEffect, useState } from 'react';
++import { useEffect, useState } from 'react';
+ 
+ function getInitialTheme() {
+   const saved = localStorage.getItem('theme');
+diff --git a/src/components/admin/AdminDashboard.jsx b/src/components/admin/AdminDashboard.jsx
+index 1bb8163..b4ff1f7 100644
+--- a/src/components/admin/AdminDashboard.jsx
++++ b/src/components/admin/AdminDashboard.jsx
+@@ -1,4 +1,4 @@
+-import React, { useEffect, useState } from 'react';
++import { useEffect, useState } from 'react';
+ import { useNavigate } from 'react-router-dom';
+ import { supabase } from '../../lib/supabaseClient';
+ 
+@@ -48,6 +48,10 @@ function CertificatesTab() {
+     setItems(data || []);
+   };
+ 
++  // One-time fetch on mount. `load()` awaits Supabase then calls setState;
++  // that's the standard data-fetching pattern, not the render-cascade issue
++  // this rule is designed to catch, so it's safe to disable here.
++  // eslint-disable-next-line react-hooks/set-state-in-effect
+   useEffect(() => { load(); }, []);
+ 
+   const resetForm = () => {
+@@ -173,6 +177,10 @@ function SkillsTab() {
+     setItems(data || []);
+   };
+ 
++  // One-time fetch on mount. `load()` awaits Supabase then calls setState;
++  // that's the standard data-fetching pattern, not the render-cascade issue
++  // this rule is designed to catch, so it's safe to disable here.
++  // eslint-disable-next-line react-hooks/set-state-in-effect
+   useEffect(() => { load(); }, []);
+ 
+   const resetForm = () => {
+@@ -303,6 +311,10 @@ function BlogTab() {
+     setItems(data || []);
+   };
+ 
++  // One-time fetch on mount. `load()` awaits Supabase then calls setState;
++  // that's the standard data-fetching pattern, not the render-cascade issue
++  // this rule is designed to catch, so it's safe to disable here.
++  // eslint-disable-next-line react-hooks/set-state-in-effect
+   useEffect(() => { load(); }, []);
+ 
+   const resetForm = () => {
+diff --git a/src/components/admin/AdminLogin.jsx b/src/components/admin/AdminLogin.jsx
+index 908b645..404a073 100644
+--- a/src/components/admin/AdminLogin.jsx
++++ b/src/components/admin/AdminLogin.jsx
+@@ -1,4 +1,4 @@
+-import React, { useState } from 'react';
++import { useState } from 'react';
+ import { useNavigate } from 'react-router-dom';
+ import { supabase } from '../../lib/supabaseClient';
+ 
+diff --git a/src/components/admin/ProtectedRoute.jsx b/src/components/admin/ProtectedRoute.jsx
+index 9e12208..3f94506 100644
+--- a/src/components/admin/ProtectedRoute.jsx
++++ b/src/components/admin/ProtectedRoute.jsx
+@@ -1,4 +1,3 @@
+-import React from 'react';
+ import { Navigate } from 'react-router-dom';
+ import { useAuth } from '../../lib/useAuth';
+ 
+diff --git a/src/components/blog/AzureFundamentalsJourney.jsx b/src/components/blog/AzureFundamentalsJourney.jsx
+new file mode 100644
+index 0000000..ba332a8
+--- /dev/null
++++ b/src/components/blog/AzureFundamentalsJourney.jsx
+@@ -0,0 +1,71 @@
++import { Link } from 'react-router-dom';
++
++export default function AzureFundamentalsJourney() {
++  return (
++    <main id="top">
++      <article className="post-wrap">
++        <Link to="/blog" className="post-back">← Back to blog</Link>
++        <span className="post-meta">Cloud / Azure — 6 min read</span>
++        <h1>From AZ-900 to AZ-104: What Studying Azure Actually Taught Me</h1>
++
++        <p>
++          Most of my hands-on projects so far have been Linux-shaped — a terminal, a Bash script, a firewall
++          rule. Azure was the first time I had to think about infrastructure I couldn't SSH into directly,
++          and it changed how I think about "cloud" as more than a buzzword on a slide.
++        </p>
++
++        <h2>Starting with AZ-900: the vocabulary problem</h2>
++        <p>
++          Microsoft Certified: Azure Fundamentals (AZ-900) is deliberately non-technical — no labs, mostly
++          concepts. I almost skipped it to jump straight into something hands-on. That would have been a
++          mistake. Half of what makes cloud platforms confusing at first isn't the technology, it's the
++          vocabulary: resource groups, subscriptions, management groups, regions versus availability zones.
++          AZ-900 is where that vocabulary finally clicked into a mental model instead of a list of terms to
++          memorize.
++        </p>
++
++        <h2>Then AZ-104: where it got real</h2>
++        <p>
++          The AZ-104 material — managing identities and governance in Azure, working with Microsoft Entra ID,
++          understanding the prerequisites for Azure administration — is where the fundamentals started to feel
++          like actual admin work rather than definitions. Managing identity and access is conceptually similar
++          to the Linux users-and-groups work I'd already done on my home server, just at a different layer:
++          instead of <code>chmod</code> and <code>/etc/passwd</code>, it's role assignments and Entra ID.
++        </p>
++
++        <p>
++          <strong>That parallel was the most useful thing I took from the whole track.</strong> Access control
++          is access control — the specific tool changes, but the underlying questions don't: who can do what,
++          to which resource, and how do you prove it later if something goes wrong.
++        </p>
++
++        <h2>Where AWS Cloud Practitioner fit in</h2>
++        <p>
++          I picked up AWS Cloud Practitioner Essentials shortly after, mostly to see how much of the Azure
++          mental model would transfer. Most of it did. The services have different names and the console looks
++          different, but the shape of the problem — compute, storage, networking, identity, and how billing
++          ties back to all of it — is close enough that the second cloud platform is much faster to reason
++          about than the first one was.
++        </p>
++
++        <h2>What I'd tell someone starting this today</h2>
++        <ul>
++          <li><strong>Don't skip the "boring" fundamentals course.</strong> AZ-900 felt slow at the time; it's the reason AZ-104 material wasn't overwhelming.</li>
++          <li><strong>Map new concepts onto something you already know.</strong> If you've touched Linux permissions, cloud IAM will make more sense faster than it looks like it should.</li>
++          <li><strong>Study a second cloud platform sooner than feels necessary.</strong> The repetition is what turns "I passed a quiz on this" into "I actually understand this."</li>
++        </ul>
++
++        <blockquote>
++          Cloud fundamentals aren't really about memorizing a provider's service catalog — they're about
++          building one mental model for access, identity, and infrastructure that transfers between providers.
++        </blockquote>
++
++        <p>
++          I'm still early in this — AZ-104 as a full administrator certification is a longer road than the
++          fundamentals track, and I haven't touched infrastructure-as-code tooling like Terraform or Bicep yet.
++          That's next.
++        </p>
++      </article>
++    </main>
++  );
++}
+diff --git a/src/components/blog/DockerComposeToKubernetes.jsx b/src/components/blog/DockerComposeToKubernetes.jsx
+index 4ed3094..a772419 100644
+--- a/src/components/blog/DockerComposeToKubernetes.jsx
++++ b/src/components/blog/DockerComposeToKubernetes.jsx
+@@ -1,4 +1,3 @@
+-import React from 'react';
+ import { Link } from 'react-router-dom';
+ 
+ export default function DockerComposeToKubernetes() {
+diff --git a/src/components/blog/GitOpsVsTraditionalOps.jsx b/src/components/blog/GitOpsVsTraditionalOps.jsx
+index 01d5bb9..f663b15 100644
+--- a/src/components/blog/GitOpsVsTraditionalOps.jsx
++++ b/src/components/blog/GitOpsVsTraditionalOps.jsx
+@@ -1,4 +1,3 @@
+-import React from 'react';
+ import { Link } from 'react-router-dom';
+ 
+ export default function GitOpsVsTraditionalOps() {
+diff --git a/src/components/blog/LinuxHomeServer.jsx b/src/components/blog/LinuxHomeServer.jsx
+index 7281663..434d242 100644
+--- a/src/components/blog/LinuxHomeServer.jsx
++++ b/src/components/blog/LinuxHomeServer.jsx
+@@ -1,4 +1,3 @@
+-import React from 'react';
+ import { Link } from 'react-router-dom';
+ 
+ export default function LinuxHomeServer() {
+diff --git a/src/components/blog/WhyLearnCICDEarly.jsx b/src/components/blog/WhyLearnCICDEarly.jsx
+index 0114482..d794a98 100644
+--- a/src/components/blog/WhyLearnCICDEarly.jsx
++++ b/src/components/blog/WhyLearnCICDEarly.jsx
+@@ -1,4 +1,3 @@
+-import React from 'react';
+ import { Link } from 'react-router-dom';
+ 
+ export default function WhyLearnCICDEarly() {
+diff --git a/src/components/certificates.jsx b/src/components/certificates.jsx
+index 5f29fcf..1bd7a7c 100644
+--- a/src/components/certificates.jsx
++++ b/src/components/certificates.jsx
+@@ -1,4 +1,4 @@
+-import React, { useEffect, useState } from 'react';
++import { useEffect, useState } from 'react';
+ import { supabase } from '../lib/supabaseClient';
+ 
+ export default function Certificates() {
+diff --git a/src/lib/renderMarkdownLite.jsx b/src/lib/renderMarkdownLite.jsx
+index a47457a..587f0b2 100644
+--- a/src/lib/renderMarkdownLite.jsx
++++ b/src/lib/renderMarkdownLite.jsx
+@@ -1,4 +1,3 @@
+-import React from 'react';
+ 
+ /**
+  * A tiny, dependency-free Markdown-ish renderer.
+diff --git a/supabase/seed_real_data.sql b/supabase/seed_real_data.sql
+new file mode 100644
+index 0000000..8ef320a
+--- /dev/null
++++ b/supabase/seed_real_data.sql
+@@ -0,0 +1,85 @@
++-- ============================================================
++-- Seed real certificates + skills data
++-- ============================================================
++-- WHY THIS FILE EXISTS:
++-- The certificates and skills sections of this site are database-driven
++-- (see src/components/certificates.jsx and src/components/Skills.jsx),
++-- pulling from Supabase at runtime. I don't have your Supabase project
++-- credentials, so I can't insert this data for you directly — running
++-- this script is a one-time manual step on your end.
++--
++-- HOW TO RUN:
++-- 1. Go to your Supabase project dashboard.
++-- 2. Open SQL Editor -> New query.
++-- 3. Paste this entire file and click Run.
++-- 4. Refresh your site's /certificates and /skills pages.
++--
++-- NOTE ON URLS:
++-- Where I didn't have your exact personal "Show credential" verification
++-- link, I used the certification/course's public provider page instead
++-- (never a fabricated link). If you'd rather link to your own credential
++-- ID pages, copy the "Show credential" URL from each LinkedIn entry and
++-- swap it into the `url` column below.
++-- ============================================================
++
++-- ===================== CERTIFICATES =====================
++-- Clearing first avoids duplicate rows if you run this more than once.
++-- Comment this line out if you've already added certificates manually
++-- via the admin dashboard and want to keep them.
++delete from public.certificates;
++
++insert into public.certificates (provider, title, url, icon_slug, icon_color, sort_order) values
++('Microsoft', 'Certified: Azure Fundamentals (AZ-900)', 'https://learn.microsoft.com/en-us/credentials/certifications/azure-fundamentals/', 'microsoftazure', '0078D4', 10),
++('Microsoft', 'AZ-104: Manage Identities and Governance in Azure', 'https://learn.microsoft.com/en-us/credentials/certifications/azure-administrator/', 'microsoftazure', '0078D4', 20),
++('Microsoft', 'Manage Identity and Access in Microsoft Entra ID', 'https://learn.microsoft.com/en-us/entra/fundamentals/', 'microsoftazure', '0078D4', 30),
++('AWS', 'AWS Cloud Practitioner Essentials', 'https://aws.amazon.com/certification/certified-cloud-practitioner/', 'amazonaws', 'FF9900', 40),
++('IBM', 'Cloud Computing Fundamentals', 'https://www.coursera.org/learn/cloud-computing', 'ibm', '052FAD', 50),
++('IBM', 'Introduction to Cloud Computing', 'https://www.coursera.org/learn/introduction-to-cloud-computing', 'ibm', '052FAD', 60),
++('IBM', 'DevOps Essentials', 'https://www.coursera.org/learn/devops-essentials', 'ibm', '052FAD', 70),
++('The Linux Foundation', 'Linux for Developers', 'https://training.linuxfoundation.org/', 'linux', 'FCC624', 80),
++('The Linux Foundation', 'Linux Tools for Developers', 'https://training.linuxfoundation.org/', 'linux', 'FCC624', 90),
++('The Linux Foundation', 'Using Git for Distributed Development', 'https://training.linuxfoundation.org/', 'git', 'F05032', 100),
++('The Linux Foundation', 'Open Source Software Development, Linux and Git (Specialization)', 'https://training.linuxfoundation.org/', 'linux', 'FCC624', 110),
++('Microsoft', 'C++ Programming Fundamentals', 'https://learn.microsoft.com/en-us/training/', 'cplusplus', '00599C', 120),
++('Microsoft', 'Intermediate C++ Programming Techniques', 'https://learn.microsoft.com/en-us/training/', 'cplusplus', '00599C', 130),
++('Microsoft', 'Advanced C++ Programming and Modern Practices', 'https://learn.microsoft.com/en-us/training/', 'cplusplus', '00599C', 140),
++('Microsoft', 'Object-Oriented Programming with C++', 'https://learn.microsoft.com/en-us/training/', 'cplusplus', '00599C', 150),
++('Google', 'Python Programming Fundamentals', 'https://grow.google/', 'python', '3776AB', 160),
++('Google', 'Hello, Python!', 'https://grow.google/', 'python', '3776AB', 170),
++('Google', 'Crash Course on Python', 'https://www.coursera.org/learn/python-crash-course', 'python', '3776AB', 180),
++('Google', 'Google AI Professional Certificate', 'https://grow.google/ai/', 'google', '4285F4', 190),
++('Anthropic', 'Claude Platform 101', 'https://www.anthropic.com/', null, 'D97757', 200),
++('Anthropic', 'Claude Code 101', 'https://www.anthropic.com/', null, 'D97757', 210),
++('Meta', 'HTML and CSS in Depth', 'https://www.coursera.org/learn/html-and-css-in-depth', 'meta', '0866FF', 220),
++('Cisco Networking Academy', 'Getting Started with Cisco Packet Tracer', 'https://www.netacad.com/courses/getting-started-cisco-packet-tracer', 'cisco', '1BA0D7', 230),
++('HP', 'Resume Writing and Job Interviewing', 'https://www.coursera.org/', null, '0096D6', 240);
++
++
++-- ===================== SKILLS =====================
++delete from public.skills;
++
++insert into public.skills (name, group_name, level_label, icon_slug, icon_color, sort_order) values
++-- Daily essentials
++('Linux Administration', 'Daily essentials', 'daily use', 'linux', 'FCC624', 10),
++('Bash Scripting', 'Daily essentials', 'daily use', 'gnubash', '4EAA25', 20),
++('Git & GitHub', 'Daily essentials', 'daily use', 'git', 'F05032', 30),
++('C++', 'Daily essentials', 'comfortable', 'cplusplus', '00599C', 40),
++('Python', 'Daily essentials', 'comfortable', 'python', '3776AB', 50),
++
++-- Active practice
++('Microsoft Azure', 'Active practice', 'practicing', 'microsoftazure', '0078D4', 60),
++('AWS', 'Active practice', 'practicing', 'amazonaws', 'FF9900', 70),
++('Nginx', 'Active practice', 'practicing', 'nginx', '009639', 80),
++('SSH Hardening', 'Active practice', 'practicing', null, '4FD1C5', 90),
++('UFW Firewall', 'Active practice', 'practicing', null, '4FD1C5', 100),
++('JavaScript', 'Active practice', 'practicing', 'javascript', 'F7DF1E', 110),
++('React', 'Active practice', 'practicing', 'react', '61DAFB', 120),
++('SQL', 'Active practice', 'practicing', 'mysql', '4479A1', 130),
++('REST APIs', 'Active practice', 'practicing', null, '4FD1C5', 140),
++('Prompt Engineering / AI Tools', 'Active practice', 'practicing', null, 'D97757', 150),
++
++-- Next on the roadmap
++('Docker', 'Next on the roadmap', 'learning', 'docker', '2496ED', 160),
++('Terraform', 'Next on the roadmap', 'exploring', 'terraform', '844FBA', 170),
++('Kubernetes', 'Next on the roadmap', 'exploring', 'kubernetes', '326CE5', 180),
++('GitHub Actions / CI/CD', 'Next on the roadmap', 'learning', 'githubactions', '2088FF', 190);
+-- 
+2.43.0
+

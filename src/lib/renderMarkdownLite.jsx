@@ -1,4 +1,3 @@
-import React from 'react';
 
 /**
  * A tiny, dependency-free Markdown-ish renderer.

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 
 export default function Hero() {
@@ -27,15 +26,15 @@ export default function Hero() {
 
           <div className="hero-v3-stats">
             <div>
-              <span className="hero-v3-stat-num">17+</span>
+              <span className="hero-v3-stat-num">40+</span>
               <span className="hero-v3-stat-label">Certifications<br />Earned</span>
             </div>
             <div>
-              <span className="hero-v3-stat-num">2</span>
+              <span className="hero-v3-stat-num">6</span>
               <span className="hero-v3-stat-label">Practice Projects<br />Completed</span>
             </div>
             <div>
-              <span className="hero-v3-stat-num">8+</span>
+              <span className="hero-v3-stat-num">12+</span>
               <span className="hero-v3-stat-label">Tools &amp;<br />Technologies</span>
             </div>
           </div>

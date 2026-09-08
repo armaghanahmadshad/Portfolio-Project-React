@@ -1,4 +1,3 @@
-import React from 'react';
 
 export default function About() {
   return (
@@ -17,10 +16,23 @@ export default function About() {
               I run technical sessions for peers and teach introductory infrastructure topics. This strengthens my ability to explain systems clearly and write documentation that teams can follow.
             </p>
             <p>
+              I recently completed a remote Full Stack Web Development internship with Neurofive Solutions, where I built React interfaces, deployed live applications, and worked with real data persistence — a useful contrast to the infrastructure-side projects below.
+            </p>
+            <p>
               My current focus is on cloud fundamentals, Git-based delivery, infrastructure as code, and containerized workflows. I want to move beyond tutorials and create systems that stay reliable when they change.
             </p>
           </div>
           <ul className="timeline reveal">
+            <li>
+              <div className="when">Jul 2026 — Aug 2026</div>
+              <div className="what">Full Stack Web Development Intern</div>
+              <div className="where">Neurofive Solutions (Remote)</div>
+            </li>
+            <li>
+              <div className="when">Mar 2025 — present</div>
+              <div className="what">Microsoft Learn Student Ambassador</div>
+              <div className="where">MSA · MNS UET Multan</div>
+            </li>
             <li>
               <div className="when">Jan 2025 — present</div>
               <div className="what">Teacher</div>
